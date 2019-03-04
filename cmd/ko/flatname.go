@@ -29,6 +29,12 @@ type NameOptions struct {
 	PreserveImportPaths bool
 	// BaseImportPaths uses the base path without MD5 hash after KO_DOCKER_REPO.
 	BaseImportPaths bool
+	// ImageName will be used as the name after KO_DOCKER_REPO.
+	ImageName string
+}
+
+func (no *NameOptions) imageName(_ string) string {
+	return no.ImageName
 }
 
 func addNamingArgs(cmd *cobra.Command, no *NameOptions) {
@@ -36,6 +42,8 @@ func addNamingArgs(cmd *cobra.Command, no *NameOptions) {
 		"Whether to preserve the full import path after KO_DOCKER_REPO.")
 	cmd.Flags().BoolVarP(&no.BaseImportPaths, "base-import-paths", "B", no.BaseImportPaths,
 		"Whether to use the base path without MD5 hash after KO_DOCKER_REPO.")
+	cmd.Flags().StringVarP(&no.ImageName, "image-name", "N", no.ImageName,
+		"Specify the image name to use after KO_DOCKER_REPO.")
 }
 
 func packageWithMD5(importpath string) string {
@@ -53,9 +61,12 @@ func baseImportPaths(importpath string) string {
 }
 
 func makeNamer(no *NameOptions) publish.Namer {
-	if no.PreserveImportPaths {
+	switch {
+	case no.ImageName != "":
+		return no.imageName
+	case no.PreserveImportPaths:
 		return preserveImportPath
-	} else if no.BaseImportPaths {
+	case no.BaseImportPaths:
 		return baseImportPaths
 	}
 	return packageWithMD5
